@@ -83,7 +83,6 @@ sandDunes::cookMySop(OP_Context &context)
 			for (GA_Iterator it(gdp->getPointRange()); !it.atEnd(); ++it)
 			{
 				GA_Index index = it.getIndex();
-				UT_Vector3 origPos = gdp->getPos3(index);
 				float h = _h.get(index);
 
 				UT_Int32Array npts;
