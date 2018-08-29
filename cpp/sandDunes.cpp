@@ -74,32 +74,34 @@ sandDunes::cookMySop(OP_Context &context)
 	float mass = GETMASS(now);
 	float trhs = GETTHRS(now);
 
-	for (int i = 0; i < iterations; i++)
+
+	GA_ROHandleIA _npts(gdp, GA_ATTRIB_POINT, "__nearpoints__"); // get nearpoints
+	GA_RWHandleF _h(gdp, GA_ATTRIB_POINT, "h"); // get height
+	if (_h.isValid() && _npts.isValid()) // check if both exist
 	{
-		GA_ROHandleIA _npts(gdp, GA_ATTRIB_POINT, "__nearpoints__");
-		GA_RWHandleF _h(gdp, GA_ATTRIB_POINT, "h");
-		if (_h.isValid())
+		for (int i = 0; i < iterations; i++) 
 		{
 			for (GA_Iterator it(gdp->getPointRange()); !it.atEnd(); ++it)
 			{
-				GA_Index index = it.getIndex();
-				float h = _h.get(index);
-
+				GA_Offset offset = *it; // pt offset
+				float h = _h.get(offset); // pt height
 				UT_Int32Array npts;
-				_npts.get(index, npts);
+				_npts.get(offset, npts);
 				int randIdx = rand() % npts.size();
-				GA_Index nptIndex = npts[randIdx];
-				float nptH = _h.get(nptIndex);
-				if ((h - nptH) >= trhs)
+				GA_Offset nptOffset = gdp->pointOffset(npts[randIdx]); // near point offset
+				float nptH = _h.get(nptOffset); // near point h
+				if ((h - nptH) >= trhs) 
 				{
 					h -= mass;
 					nptH += mass;
-					_h.set(nptIndex, h);
-					_h.set(index, nptH);
+					_h.set(nptOffset, h);
+					_h.set(offset, nptH);
 				}
 				//std::cout << "index: " << index << " h: " << h << "_npts " << nptIndex << " nptsH " << nptH << std::endl;
 			}
 		}
 	}
+	else
+		std::cerr << " h or __nearpoints__  attribute is lost !!" << std::endl;
 	return error();
 }
