@@ -1,0 +1,22 @@
+// Main Variables
+float t = ch("threshold"); // threshold
+float seed = ch("seed");
+float mass = ch("mass");
+
+int npts[];
+foreach(int i; i[]@__nearpoints__)
+{
+	float nptH = point(0, "h", i);
+	int dif = (@h - nptH) >= t;
+	if (dif)
+		append(npts, i);
+}
+
+int len = len(npts);
+i@dir = -1;
+if (len)
+{
+	@h -= mass;
+	int randPick = floor(rand(@ptnum + seed) * len); // pick one randomly
+	i@dir = npts[randPick];
+}
