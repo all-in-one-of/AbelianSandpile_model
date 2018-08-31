@@ -1,0 +1,10 @@
+float mass = ch("mass"); // mass to fall
+
+foreach(int i; i[]@__nearpoints__)
+{
+	int dir = point(0, "dir", i);
+	if(dir == @ptnum)
+	{
+		@h += mass;
+	}
+}
