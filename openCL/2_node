@@ -1,0 +1,53 @@
+float getData1(global float * data, int i)
+{
+    return (float)(data[i]);
+}
+
+int getDataInt(global int * data, int i)
+{
+    return (int)(data[i]);
+}
+
+float setDataInt(global int * dataout, int i, int datain)
+{
+    dataout[i] = datain;
+}
+
+float setData1(global float * dataout, int i, float datain)
+{
+    dataout[i] = datain;
+}
+//////////////////////////////////////////////////////
+kernel void sandModel( 
+                 int h_length, 
+                 global float * h ,
+                 int dir_length, 
+                 global int * dir ,
+                 int neighbours_length, 
+                 global int * neighbours_index, 
+                  global int * neighbours ,
+                 float  threshold ,
+                 float  mass 
+)
+{
+    int idx = get_global_id(0);
+    if (idx >= h_length)
+        return;
+        
+    float height = getData1(h, idx); // current point height
+    
+    int nstart = neighbours_index[idx];
+    int nend = neighbours_index[idx+1];
+
+    // Array of points with valid threshold
+    for (int nidx = nstart; nidx < nend; ++nidx)
+    {
+        int nptidx = neighbours[nidx]; // near point index
+        int dirIdx = getDataInt(dir, nptidx); // near point dir
+        if (dirIdx == idx)
+        {
+            height += mass;
+            setData1(h, idx, height);
+        }
+    }
+}
