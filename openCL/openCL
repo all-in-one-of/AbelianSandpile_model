@@ -1,0 +1,65 @@
+kernel void sandModel( 
+                 int h_length, 
+                 global float * h ,
+                 int dir_length, 
+                 global int * dir ,
+                 int neighbours_length, 
+                 global int * neighbours_index, 
+                  global int * neighbours ,
+                 float  threshold ,
+                 float  mass 
+)
+{
+    int idx = get_global_id(0);
+    if (idx >= h_length)
+        return;
+        
+    int nstart = neighbours_index[idx];
+    int nend = neighbours_index[idx+1];
+
+    // Array of points with valid threshold
+    dir[idx] = -1;
+    for (int nidx = nstart; nidx < nend; ++nidx)
+    {
+        int nptidx = neighbours[nidx];              // near point index
+        float nptH = h[nptidx];                     // near point height
+        float dif = (h[idx] - nptH) >= threshold;   // distance between peak and low nearpoints
+        if (dif)
+        {
+            dir[idx] = nptidx;
+            h[idx] -= mass;
+            break;
+        }
+    }
+}
+
+kernel void sandModelH( 
+                 int h_length, 
+                 global float * h ,
+                 int dir_length, 
+                 global int * dir ,
+                 int neighbours_length, 
+                 global int * neighbours_index, 
+                  global int * neighbours ,
+                 float  threshold ,
+                 float  mass 
+)
+{
+    int idx = get_global_id(0);
+    if (idx >= h_length)
+        return;
+        
+    int nstart = neighbours_index[idx];
+    int nend = neighbours_index[idx+1];
+
+    // Array of points with valid threshold
+    for (int nidx = nstart; nidx < nend; ++nidx)
+    {
+        int nptidx = neighbours[nidx]; // near point index
+        if (dir[nptidx] == idx)
+        {
+            h[idx] += mass;
+        }
+    }
+        
+}
