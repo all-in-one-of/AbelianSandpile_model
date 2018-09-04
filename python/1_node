@@ -1,0 +1,34 @@
+import random
+
+node = hou.pwd()
+geo = node.geometry()
+
+# Add code to modify contents of geo.
+
+mass = node.parm("mass").eval() # mass
+trh  = node.parm("threshold").eval() # threshold distance
+iter = node.parm("iter").eval() # iterations
+
+for i in range(iter):
+    for point in geo.points():
+        nptList = point.intListAttribValue("__neighbors__") # near points numbers
+        height = point.floatAttribValue("h") # height of the processing point
+        
+        nptsH = dict()
+        # loop over the near points and add valid points to the dict
+        for i in nptList:
+            nptidx = geo.iterPoints()[i] # near point index
+            nptH = nptidx.floatAttribValue("h") # near point height
+            dif = height - nptH # height difference
+            
+            # if near pt height is higher, add near point height to the dict
+            if dif > trh:
+                nptsH[nptidx] = nptH        
+        # if we have any neighbours
+        if bool(nptsH):
+            height-=mass
+            point.setAttribValue("h", height) # set new height
+            
+            pt, h = random.choice(nptsH.items()) # random pick from the dict of nearpoints
+            h+=mass
+            pt.setAttribValue("h", h) # set new npt height
