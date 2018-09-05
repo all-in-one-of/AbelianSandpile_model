@@ -1,0 +1,141 @@
+kernel void sandDunes( 
+                 int height_stride_x, 
+                 int height_stride_y, 
+                 int height_stride_z, 
+                 int height_stride_offset, 
+                 int height_res_x, 
+                 int height_res_y, 
+                 int height_res_z, 
+                 global float * height ,
+                 int dir_stride_x, 
+                 int dir_stride_y, 
+                 int dir_stride_z, 
+                 int dir_stride_offset, 
+                 int dir_res_x, 
+                 int dir_res_y, 
+                 int dir_res_z, 
+                 global float * dir ,
+                 int     resx ,
+                 int     resy 
+)
+{
+    int gidx = get_global_id(0);
+    int gidy = get_global_id(1);
+    int gidz = get_global_id(2);
+    int idx = height_stride_offset + height_stride_x * gidx
+                                   + height_stride_y * gidy;
+                           
+    float xo[] = {-1, 0, 1,
+                  -1, 0, 1,
+                  -1, 0, 1};
+
+    float yo[] = {1, 1, 1,
+                  0, 0, 0,
+                 -1,-1,-1};
+               
+    float w[] = {0, 0, 0,
+                 0, 0, 0,
+                 0, 0, 0};
+   
+    float h[] = {0, 0, 0,
+                 0, 0, 0,
+                 0, 0, 0};                 
+                  
+    dir[idx] = -1;
+    
+    for(int i=0; i<9; i++)
+    {
+        int x1 = (gidx + xo[i]);
+        int y1 = (gidx + yo[i]);
+        
+        if (x1<0) x1 = 0;
+        if (x1>resx-1) x1 = resx-1;
+        if (y1<0) y1 = 0;
+        if (y1 > resy-1) y1 = resy-1;
+        
+        int ndx = height_stride_offset + height_stride_x * x1
+                                       + height_stride_y * y1;
+        
+        w[i] = ndx;
+        h[i] = height[ndx];
+    }
+    
+    
+    for(int i=0; i<9; i++)
+    {
+        int nptidx = w[i];
+
+        int dif = (height[idx] - h[i]) >= 0.3;
+        if (dif)
+        {
+            dir[idx] = w[i];
+            height[idx] -= 0.2;
+            break;
+        }
+    }
+}
+
+kernel void sandDunesH( 
+                 int height_stride_x, 
+                 int height_stride_y, 
+                 int height_stride_z, 
+                 int height_stride_offset, 
+                 int height_res_x, 
+                 int height_res_y, 
+                 int height_res_z, 
+                 global float * height ,
+                 int dir_stride_x, 
+                 int dir_stride_y, 
+                 int dir_stride_z, 
+                 int dir_stride_offset, 
+                 int dir_res_x, 
+                 int dir_res_y, 
+                 int dir_res_z, 
+                 global float * dir ,
+                 int     resx ,
+                 int     resy 
+)
+{
+    int gidx = get_global_id(0);
+    int gidy = get_global_id(1);
+    int gidz = get_global_id(2);
+    int idx = height_stride_offset + height_stride_x * gidx
+                                   + height_stride_y * gidy;
+                           
+    float xo[] = {-1, 0, 1,
+                  -1, 0, 1,
+                  -1, 0, 1};
+
+    float yo[] = {1, 1, 1,
+                  0, 0, 0,
+                 -1,-1,-1};
+               
+    float w[] = {0, 0, 0,
+                 0, 0, 0,
+                 0, 0, 0};
+    
+    for(int i=0; i<9; i++)
+    {
+        int x1 = (gidx + xo[i]);
+        int y1 = (gidx + yo[i]);
+        
+        if (x1<0) x1 = 0;
+        if (x1>resx-1) x1 = resx-1;
+        if (y1<0) y1 = 0;
+        if (y1>resy-1) y1 = resy-1;
+        
+        int ndx = height_stride_offset + height_stride_x * x1
+                                       + height_stride_y * y1;
+        
+        w[i] = ndx;
+    }
+    
+    for(int i=0; i<9; i++)
+    {
+        int nptidx = w[i];
+        if (dir[nptidx] == idx)
+        {
+            height[idx] += 0.2;
+        }
+    }
+}
