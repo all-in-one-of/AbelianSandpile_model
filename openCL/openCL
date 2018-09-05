@@ -1,65 +1,142 @@
-kernel void sandModel( 
-                 int h_length, 
-                 global float * h ,
-                 int dir_length, 
-                 global int * dir ,
-                 int neighbours_length, 
-                 global int * neighbours_index, 
-                  global int * neighbours ,
-                 float  threshold ,
-                 float  mass 
+kernel void sandDunes( 
+                 int height_stride_x, 
+                 int height_stride_y, 
+                 int height_stride_z, 
+                 int height_stride_offset, 
+                 int height_res_x, 
+                 int height_res_y, 
+                 int height_res_z, 
+                 global float * height ,
+                 int dir_stride_x, 
+                 int dir_stride_y, 
+                 int dir_stride_z, 
+                 int dir_stride_offset, 
+                 int dir_res_x, 
+                 int dir_res_y, 
+                 int dir_res_z, 
+                 global float * dir ,
+                 float  mass ,
+                 float  treshold ,
+                 int     resx ,
+                 int     resy 
 )
 {
-    int idx = get_global_id(0);
-    if (idx >= h_length)
-        return;
-        
-    int nstart = neighbours_index[idx];
-    int nend = neighbours_index[idx+1];
+    int gidx = get_global_id(0);
+    int gidy = get_global_id(1);
+    int gidz = get_global_id(2);
+    int idx = height_stride_offset + height_stride_x * gidx
+                                   + height_stride_y * gidy;
+                                   
+    float xo[] = {-1, 0, 1,
+                  -1, 0, 1,
+                  -1, 0, 1};
 
-    // Array of points with valid threshold
+    float yo[] = {1, 1, 1,
+                  0, 0, 0,
+                 -1,-1,-1};
+               
+    int n[] =   {0, 0, 0,
+                 0, 0, 0,
+                 0, 0, 0};
+                                 
+                  
     dir[idx] = -1;
-    for (int nidx = nstart; nidx < nend; ++nidx)
+    
+    for(int i=0; i<9; i++)
     {
-        int nptidx = neighbours[nidx];              // near point index
-        float nptH = h[nptidx];                     // near point height
-        float dif = (h[idx] - nptH) >= threshold;   // distance between peak and low nearpoints
+        int x1 = (gidx + xo[i]);
+        int y1 = (gidy + yo[i]);
+        
+        if (x1<0) x1 = 0;
+        if (x1>resx-1) x1 = resx-1;
+        if (y1<0) y1 = 0;
+        if (y1>resy-1) y1 = resy-1;
+        
+        int ndx = height_stride_offset + height_stride_x * x1
+                                       + height_stride_y * y1;
+        
+        n[i] = ndx;
+    }
+    
+    for(int i=0; i<9; i++)
+    {       
+        int nptidx = n[i];
+        int dif = (height[idx] - height[nptidx]) >= treshold;
         if (dif)
         {
             dir[idx] = nptidx;
-            h[idx] -= mass;
+            height[idx] -= mass;
             break;
         }
     }
 }
 
-kernel void sandModelH( 
-                 int h_length, 
-                 global float * h ,
-                 int dir_length, 
-                 global int * dir ,
-                 int neighbours_length, 
-                 global int * neighbours_index, 
-                  global int * neighbours ,
-                 float  threshold ,
-                 float  mass 
+kernel void sandDunesH( 
+                 int height_stride_x, 
+                 int height_stride_y, 
+                 int height_stride_z, 
+                 int height_stride_offset, 
+                 int height_res_x, 
+                 int height_res_y, 
+                 int height_res_z, 
+                 global float * height ,
+                 int dir_stride_x, 
+                 int dir_stride_y, 
+                 int dir_stride_z, 
+                 int dir_stride_offset, 
+                 int dir_res_x, 
+                 int dir_res_y, 
+                 int dir_res_z, 
+                 global float * dir ,
+                 float  mass ,
+                 float  treshold ,
+                 int     resx ,
+                 int     resy 
 )
 {
-    int idx = get_global_id(0);
-    if (idx >= h_length)
-        return;
-        
-    int nstart = neighbours_index[idx];
-    int nend = neighbours_index[idx+1];
+    int gidx = get_global_id(0);
+    int gidy = get_global_id(1);
+    int gidz = get_global_id(2);
+    int idx = height_stride_offset + height_stride_x * gidx
+                                   + height_stride_y * gidy;
 
-    // Array of points with valid threshold
-    for (int nidx = nstart; nidx < nend; ++nidx)
+                           
+    float xo[] = {-1, 0, 1,
+                  -1, 0, 1,
+                  -1, 0, 1};
+
+    float yo[] = {1, 1, 1,
+                  0, 0, 0,
+                 -1,-1,-1};
+               
+    int n[] =   {0, 0, 0,
+                 0, 0, 0,
+                 0, 0, 0};
+                                  
+                  
+   
+    for(int i=0; i<9; i++)
     {
-        int nptidx = neighbours[nidx]; // near point index
+        int x1 = (gidx + xo[i]);
+        int y1 = (gidy + yo[i]);
+        
+        if (x1<0) x1 = 0;
+        if (x1>resx-1) x1 = resx-1;
+        if (y1<0) y1 = 0;
+        if (y1>resy-1) y1 = resy-1;
+        
+        int ndx = height_stride_offset + height_stride_x * x1
+                                       + height_stride_y * y1;
+        
+        n[i] = ndx;
+    }
+    
+    for(int i=0; i<9; i++)
+    {       
+        int nptidx = n[i];
         if (dir[nptidx] == idx)
         {
-            h[idx] += mass;
-        }
+            height[idx] += mass;
+        }        
     }
-        
 }
