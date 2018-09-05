@@ -1,3 +1,37 @@
+__kernel void swap(__global int *global_data, __local int *local_data, uint length) {
+
+   int t;
+   int direction = 1;
+
+   for(int i=0; i<length; i+=4) {
+
+      /* Read data from global memory */
+      local_data[i] = global_data[i];
+      local_data[i+1] = global_data[i+1];
+      local_data[i+2] = global_data[i+2];
+      local_data[i+3] = global_data[i+3];
+
+      /* Swap opposite pairs */
+      if((local_data[i] > local_data[i+2]) == direction) {
+         t = local_data[i]; 
+         local_data[i] = local_data[i+2]; 
+         local_data[i+2] = t;
+      }
+      if((local_data[i+1] > local_data[i+3]) == direction) {
+         t = local_data[i+1]; 
+         local_data[i+1] = local_data[i+3]; 
+         local_data[i+3] = t;
+      }
+
+      /* Write data to global memory */
+      global_data[i] = local_data[i];
+      global_data[i+1] = local_data[i+1];
+      global_data[i+2] = local_data[i+2];
+      global_data[i+3] = local_data[i+3];
+   }
+}
+
+
 kernel void sandDunes( 
                  int height_stride_x, 
                  int height_stride_y, 
@@ -39,19 +73,24 @@ kernel void sandDunes(
    
     float h[] = {0, 0, 0,
                  0, 0, 0,
-                 0, 0, 0};                 
+                 0, 0, 0};
+
+    float ws[] = {0, 0, 0,
+                  0, 0, 0,
+                  0, 0, 0};                     
+                 
                   
     dir[idx] = -1;
     
     for(int i=0; i<9; i++)
     {
         int x1 = (gidx + xo[i]);
-        int y1 = (gidx + yo[i]);
+        int y1 = (gidy + yo[i]);
         
         if (x1<0) x1 = 0;
         if (x1>resx-1) x1 = resx-1;
         if (y1<0) y1 = 0;
-        if (y1 > resy-1) y1 = resy-1;
+        if (y1>resy-1) y1 = resy-1;
         
         int ndx = height_stride_offset + height_stride_x * x1
                                        + height_stride_y * y1;
@@ -60,16 +99,20 @@ kernel void sandDunes(
         h[i] = height[ndx];
     }
     
+    swap(ws, w, 9);
+    
+    //int seed = 1234;
+    //seed=(seed<<2+5721)%9876543;
+    //float val = seed % 9;
     
     for(int i=0; i<9; i++)
-    {
+    {       
         int nptidx = w[i];
-
-        int dif = (height[idx] - h[i]) >= 0.3;
+        int dif = (height[idx] - h[i]) >= 0.05;
         if (dif)
         {
             dir[idx] = w[i];
-            height[idx] -= 0.2;
+            height[idx] -= 0.04;
             break;
         }
     }
@@ -117,7 +160,7 @@ kernel void sandDunesH(
     for(int i=0; i<9; i++)
     {
         int x1 = (gidx + xo[i]);
-        int y1 = (gidx + yo[i]);
+        int y1 = (gidy + yo[i]);
         
         if (x1<0) x1 = 0;
         if (x1>resx-1) x1 = resx-1;
@@ -135,7 +178,7 @@ kernel void sandDunesH(
         int nptidx = w[i];
         if (dir[nptidx] == idx)
         {
-            height[idx] += 0.2;
+            height[idx] += 0.04;
         }
     }
 }
