@@ -1,37 +1,3 @@
-__kernel void swap(__global int *global_data, __local int *local_data, uint length) {
-
-   int t;
-   int direction = 1;
-
-   for(int i=0; i<length; i+=4) {
-
-      /* Read data from global memory */
-      local_data[i] = global_data[i];
-      local_data[i+1] = global_data[i+1];
-      local_data[i+2] = global_data[i+2];
-      local_data[i+3] = global_data[i+3];
-
-      /* Swap opposite pairs */
-      if((local_data[i] > local_data[i+2]) == direction) {
-         t = local_data[i]; 
-         local_data[i] = local_data[i+2]; 
-         local_data[i+2] = t;
-      }
-      if((local_data[i+1] > local_data[i+3]) == direction) {
-         t = local_data[i+1]; 
-         local_data[i+1] = local_data[i+3]; 
-         local_data[i+3] = t;
-      }
-
-      /* Write data to global memory */
-      global_data[i] = local_data[i];
-      global_data[i+1] = local_data[i+1];
-      global_data[i+2] = local_data[i+2];
-      global_data[i+3] = local_data[i+3];
-   }
-}
-
-
 kernel void sandDunes( 
                  int height_stride_x, 
                  int height_stride_y, 
@@ -49,6 +15,8 @@ kernel void sandDunes(
                  int dir_res_y, 
                  int dir_res_z, 
                  global float * dir ,
+                 float  mass ,
+                 float  treshold ,
                  int     resx ,
                  int     resy 
 )
@@ -58,7 +26,7 @@ kernel void sandDunes(
     int gidz = get_global_id(2);
     int idx = height_stride_offset + height_stride_x * gidx
                                    + height_stride_y * gidy;
-                           
+                                   
     float xo[] = {-1, 0, 1,
                   -1, 0, 1,
                   -1, 0, 1};
@@ -67,18 +35,10 @@ kernel void sandDunes(
                   0, 0, 0,
                  -1,-1,-1};
                
-    float w[] = {0, 0, 0,
+    int n[] =   {0, 0, 0,
                  0, 0, 0,
                  0, 0, 0};
-   
-    float h[] = {0, 0, 0,
-                 0, 0, 0,
-                 0, 0, 0};
-
-    float ws[] = {0, 0, 0,
-                  0, 0, 0,
-                  0, 0, 0};                     
-                 
+                                 
                   
     dir[idx] = -1;
     
@@ -95,24 +55,17 @@ kernel void sandDunes(
         int ndx = height_stride_offset + height_stride_x * x1
                                        + height_stride_y * y1;
         
-        w[i] = ndx;
-        h[i] = height[ndx];
+        n[i] = ndx;
     }
-    
-    swap(ws, w, 9);
-    
-    //int seed = 1234;
-    //seed=(seed<<2+5721)%9876543;
-    //float val = seed % 9;
     
     for(int i=0; i<9; i++)
     {       
-        int nptidx = w[i];
-        int dif = (height[idx] - h[i]) >= 0.05;
+        int nptidx = n[i];
+        int dif = (height[idx] - height[nptidx]) >= treshold;
         if (dif)
         {
-            dir[idx] = w[i];
-            height[idx] -= 0.04;
+            dir[idx] = nptidx;
+            height[idx] -= mass;
             break;
         }
     }
@@ -135,6 +88,8 @@ kernel void sandDunesH(
                  int dir_res_y, 
                  int dir_res_z, 
                  global float * dir ,
+                 float  mass ,
+                 float  treshold ,
                  int     resx ,
                  int     resy 
 )
@@ -144,6 +99,7 @@ kernel void sandDunesH(
     int gidz = get_global_id(2);
     int idx = height_stride_offset + height_stride_x * gidx
                                    + height_stride_y * gidy;
+
                            
     float xo[] = {-1, 0, 1,
                   -1, 0, 1,
@@ -153,10 +109,12 @@ kernel void sandDunesH(
                   0, 0, 0,
                  -1,-1,-1};
                
-    float w[] = {0, 0, 0,
+    int n[] =   {0, 0, 0,
                  0, 0, 0,
                  0, 0, 0};
-    
+                                  
+                  
+   
     for(int i=0; i<9; i++)
     {
         int x1 = (gidx + xo[i]);
@@ -170,15 +128,15 @@ kernel void sandDunesH(
         int ndx = height_stride_offset + height_stride_x * x1
                                        + height_stride_y * y1;
         
-        w[i] = ndx;
+        n[i] = ndx;
     }
     
     for(int i=0; i<9; i++)
-    {
-        int nptidx = w[i];
+    {       
+        int nptidx = n[i];
         if (dir[nptidx] == idx)
         {
-            height[idx] += 0.04;
-        }
+            height[idx] += mass;
+        }        
     }
 }
