@@ -1,3 +1,15 @@
+static uint random(float seed, int idx) {
+    uint s = *(uint*)(&seed);
+    s ^= idx << 3;
+    s *= 179424691;
+    s ^= s << 13 | s >> (32-13);
+    s ^= s >> 17 | s << (32-17);
+    s ^= s << 23;
+    s *= 179424691;
+    s = s % 9;
+    return s;
+}
+
 kernel void sandDunes( 
                  int height_stride_x, 
                  int height_stride_y, 
@@ -7,6 +19,7 @@ kernel void sandDunes(
                  int height_res_y, 
                  int height_res_z, 
                  global float * height ,
+                 global float * mask ,
                  int dir_stride_x, 
                  int dir_stride_y, 
                  int dir_stride_z, 
@@ -15,10 +28,10 @@ kernel void sandDunes(
                  int dir_res_y, 
                  int dir_res_z, 
                  global float * dir ,
-                 float  mass ,
                  float  treshold ,
-                 int     resx ,
-                 int     resy 
+                 float  mass ,
+                 int     resy ,
+                 int     resx 
 )
 {
     int gidx = get_global_id(0);
@@ -26,7 +39,7 @@ kernel void sandDunes(
     int gidz = get_global_id(2);
     int idx = height_stride_offset + height_stride_x * gidx
                                    + height_stride_y * gidy;
-                                   
+                               
     float xo[] = {-1, 0, 1,
                   -1, 0, 1,
                   -1, 0, 1};
@@ -57,15 +70,17 @@ kernel void sandDunes(
         
         n[i] = ndx;
     }
-    
+
     for(int i=0; i<9; i++)
-    {       
-        int nptidx = n[i];
+    {
+        uint randval = random(i, idx);
+        
+        int nptidx = n[randval];
         int dif = (height[idx] - height[nptidx]) >= treshold;
         if (dif)
         {
             dir[idx] = nptidx;
-            height[idx] -= mass;
+            height[idx] -= mass * mask[idx];
             break;
         }
     }
@@ -80,6 +95,7 @@ kernel void sandDunesH(
                  int height_res_y, 
                  int height_res_z, 
                  global float * height ,
+                 global float * mask ,
                  int dir_stride_x, 
                  int dir_stride_y, 
                  int dir_stride_z, 
@@ -88,10 +104,10 @@ kernel void sandDunesH(
                  int dir_res_y, 
                  int dir_res_z, 
                  global float * dir ,
-                 float  mass ,
                  float  treshold ,
-                 int     resx ,
-                 int     resy 
+                 float  mass ,
+                 int     resy ,
+                 int     resx 
 )
 {
     int gidx = get_global_id(0);
@@ -99,7 +115,6 @@ kernel void sandDunesH(
     int gidz = get_global_id(2);
     int idx = height_stride_offset + height_stride_x * gidx
                                    + height_stride_y * gidy;
-
                            
     float xo[] = {-1, 0, 1,
                   -1, 0, 1,
@@ -132,11 +147,10 @@ kernel void sandDunesH(
     }
     
     for(int i=0; i<9; i++)
-    {       
-        int nptidx = n[i];
-        if (dir[nptidx] == idx)
+    {
+        if (dir[n[i]] == idx)
         {
-            height[idx] += mass;
+            height[idx] += mass * mask[idx];
         }        
     }
 }
